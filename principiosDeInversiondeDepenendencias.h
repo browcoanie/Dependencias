@@ -45,4 +45,12 @@ void deleteRepeated(Node **p){
     push(p, value);
 }
 
+void pushButtom(Node **p, int value){
+    if(isVoid(*p)) push(p, value);
+    int currentValue = pop(p);
+    pushButtom(p,value);
+    push(p, currentValue);
+}
+
+
 
