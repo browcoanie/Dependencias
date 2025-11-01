@@ -225,3 +225,40 @@ void sortStack(Node **p){
     insertInSortedOrder(p,value);
 
 }
+
+void pilaDigitos(Node **p, int numero){
+    // Caso base
+    // Si el número es de un solo dígito (0-9),
+    if(numero < 10){
+        push(p, numero);
+        return;
+    }
+    // 1. Llama a la función con el número "reducido"
+    // (ej. 512 -> 51)
+    pilaDigitos(p, numero /10);
+
+    // 2. Obtiene el último dígito del número ACTUAL
+    // (ej. 512 % 10 -> 2)
+    int digito = numero % 10;
+
+    push(p,digito);
+
+}
+
+void sumaPilas(Node **A, Node **B,Node **aux, int count){
+    if(isVoid(*A) && isVoid(*B) && count == 0) return;
+    
+    int digitoA = 0,digitoB = 0 ;
+    if(!isVoid(*A)) digitoA = pop(A);
+    if(!isVoid(*B)) digitoB = pop(B);
+
+    int sumaColumna = digitoA + digitoB + count;
+    int nuevoCount = sumaColumna / 10;
+    int digitoResultado = sumaColumna % 10;
+    push(aux, digitoResultado);
+
+    sumaPilas(A,B, aux, nuevoCount);
+
+
+
+}
