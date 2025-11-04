@@ -1,0 +1,316 @@
+#include <iostream>
+#include <string>
+#include <windows.h> // Para system("cls") y SetConsoleOutputCP
+#include <conio.h>   // Para _getch()
+
+using namespace std;
+
+// 1. DEFINICIÓN DE ESTRUCTURA
+// -----------------------------------------------------
+
+// El documento que se va a imprimir
+struct Documento {
+    string nombre;
+    bool prioritario;
+};
+
+// El nodo de la lista enlazada (la cola)
+struct Node {
+    Documento doc;
+    Node* next;
+};
+
+// La estructura principal de la Cola
+// Necesita un puntero al frente, al final, y un contador
+struct Cola {
+    Node* frente;
+    Node* final;
+    int tamano;
+};
+
+// 2. FUNCIONES BÁSICAS DE LA COLA
+// -----------------------------------------------------
+
+/**
+ * @brief Inicializa la cola con valores nulos y tamaño 0.
+ */
+void inicializarCola(Cola &c) {
+    c.frente = NULL;
+    c.final = NULL;
+    c.tamano = 0;
+}
+
+/**
+ * @brief Verifica si la cola está vacía.
+ */
+bool colaVacia(Cola c) {
+    return c.frente == NULL;
+}
+
+/**
+ * @brief Crea un nuevo nodo para el documento.
+ */
+Node* crearNodo(Documento doc) {
+    Node* nuevo = new Node;
+    nuevo->doc = doc;
+    nuevo->next = NULL;
+    return nuevo;
+}
+
+// 3. FUNCIONES DE LÓGICA DEL PROBLEMA
+// -----------------------------------------------------
+
+/**
+ * @brief (Función Auxiliar) Elimina el último doc no prioritario.
+ * Esta es la regla más compleja (3.b).
+ */
+void eliminarUltimoNoPrioritario(Cola &c) {
+    Node* actual = c.frente;
+    Node* anterior = NULL;
+    
+    Node* ultimoNP = NULL;        // Puntero al NP a eliminar
+    Node* anteriorUltimoNP = NULL; // Puntero al nodo ANTES del que eliminaremos
+
+    // 1. Buscar el último NP en toda la cola
+    while (actual != NULL) {
+        if (actual->doc.prioritario == false) {
+            ultimoNP = actual;
+            anteriorUltimoNP = anterior;
+        }
+        anterior = actual;
+        actual = actual->next;
+    }
+
+    // 2. Si encontramos uno (ultimoNP no es NULL), lo eliminamos
+    if (ultimoNP != NULL) {
+        cout << "[!] Cola llena. Descartando doc no prioritario: '" << ultimoNP->doc.nombre << "'" << endl;
+        Sleep(1500);
+
+        // Caso 1: El NP a eliminar es el FRENTE de la cola
+        if (ultimoNP == c.frente) {
+            c.frente = c.frente->next;
+        } 
+        // Caso 2: El NP a eliminar está en medio o al final
+        else {
+            anteriorUltimoNP->next = ultimoNP->next;
+        }
+
+        // Caso 3: Si el NP a eliminar era también el FINAL, actualizamos el final
+        if (ultimoNP == c.final) {
+            c.final = anteriorUltimoNP;
+        }
+
+        delete ultimoNP;
+        c.tamano--;
+    } 
+    else {
+        // No se encontraron NP, así que no se puede eliminar nada
+        cout << "[X] Cola llena solo de documentos prioritarios. No se puede agregar." << endl;
+        Sleep(1500);
+    }
+}
+
+/**
+ * @brief Añade un documento a la cola (FIFO) respetando las reglas de prioridad.
+ */
+void encolar(Cola &c, Documento doc) {
+    
+    // --- REGLA 3: MANEJO DE COLA LLENA (tamano == 5) ---
+    if (c.tamano == 5) {
+        
+        // Regla 3.a: Si el doc nuevo es NO prioritario, se rechaza
+        if (doc.prioritario == false) {
+            cout << "[X] Cola llena. No se puede agregar el doc no prioritario '" << doc.nombre << "'." << endl;
+            return;
+        }
+        
+        // Regla 3.b: Si el doc nuevo es PRIORITARIO, buscar un NP para eliminar
+        eliminarUltimoNoPrioritario(c);
+
+        // Si después de eliminar, la cola sigue llena (porque solo había P), no se puede insertar
+        if (c.tamano == 5) {
+            return;
+        }
+        // Si se hizo espacio (tamano es 4), la función continúa y lo inserta más abajo.
+    }
+
+    // --- REGLA 1 y 2: INSERCIÓN EN COLA CON ESPACIO ---
+    Node* nuevo = crearNodo(doc);
+
+    // Caso A: La cola está vacía
+    if (colaVacia(c)) {
+        c.frente = nuevo;
+        c.final = nuevo;
+    }
+    // Caso B: El doc es NO prioritario (siempre va al final)
+    else if (doc.prioritario == false) {
+        c.final->next = nuevo;
+        c.final = nuevo;
+    }
+    // Caso C: El doc es PRIORITARIO (Regla 2: no puede ir detrás de un NP)
+    else {
+        Node* actual = c.frente;
+        Node* anterior = NULL;
+
+        // Buscar la posición correcta: parar cuando encontremos el primer NO prioritario
+        while (actual != NULL && actual->doc.prioritario == true) {
+            anterior = actual;
+            actual = actual->next;
+        }
+
+        // C.1: Si no se encontraron NP (actual es NULL), va al final
+        if (actual == NULL) {
+            c.final->next = nuevo;
+            c.final = nuevo;
+        }
+        // C.2: Si el primer NP es el FRENTE (anterior es NULL), se inserta al inicio
+        else if (anterior == NULL) {
+            nuevo->next = c.frente;
+            c.frente = nuevo;
+        }
+        // C.3: Se encontró un NP en medio, se inserta justo antes
+        else {
+            anterior->next = nuevo;
+            nuevo->next = actual;
+        }
+    }
+
+    c.tamano++;
+    cout << "[+] Documento '" << doc.nombre << "' agregado a la cola." << endl;
+}
+
+/**
+ * @brief Saca un documento de la cola (siempre del FRENTE).
+ */
+void desencolar(Cola &c) {
+    if (colaVacia(c)) {
+        cout << "[!] La cola de impresion esta vacia." << endl;
+        return;
+    }
+
+    // 1. Guardar el nodo del frente
+    Node* temp = c.frente;
+    Documento docImpreso = temp->doc;
+
+    // 2. Mover el frente al siguiente
+    c.frente = c.frente->next;
+
+    // 3. Si la cola quedó vacía, actualizar el puntero 'final'
+    if (c.frente == NULL) {
+        c.final = NULL;
+    }
+
+    // 4. Liberar memoria y decrementar tamaño
+    delete temp;
+    c.tamano--;
+
+    cout << "\n========================================" << endl;
+    cout << "  IMPRIMIENDO: " << docImpreso.nombre << endl;
+    cout << "  Prioridad: " << (docImpreso.prioritario ? "Alta" : "Normal") << endl;
+    cout << "========================================" << endl;
+}
+
+/**
+ * @brief Muestra el estado actual de la cola.
+ */
+void mostrarCola(Cola c) {
+    if (colaVacia(c)) {
+        cout << "[!] La cola de impresion esta vacia." << endl;
+        return;
+    }
+
+    cout << "\n--- COLA DE IMPRESION (Tamano: " << c.tamano << "/5) ---" << endl;
+    cout << " FRENTE" << endl;
+    cout << "   |" << endl;
+
+    Node* actual = c.frente;
+    while (actual != NULL) {
+        cout << "  [ " << (actual->doc.prioritario ? "PRIORITARIO" : "Normal     ") << " ] - " 
+             << actual->doc.nombre << endl;
+        actual = actual->next;
+    }
+    
+    cout << "   |" << endl;
+    cout << " FINAL" << endl;
+    cout << "------------------------------------------" << endl;
+}
+
+// 4. FUNCIONES DEL MENÚ Y MAIN
+// -----------------------------------------------------
+
+void pausarYLimpiar() {
+    cout << "\nPresione una tecla para continuar...";
+    _getch(); // Espera a que el usuario presione una tecla
+    system("cls"); // Limpia la consola
+}
+
+int mostrarMenu() {
+    cout << "=== SIMULADOR DE IMPRESORA (FIFO) ===" << endl;
+    cout << "1. Agregar Documento" << endl;
+    cout << "2. Imprimir Siguiente Documento" << endl;
+    cout << "3. Ver Cola de Impresion" << endl;
+    cout << "0. Salir" << endl;
+    cout << "-------------------------------------" << endl;
+    cout << "Seleccione una opcion: ";
+    int opcion;
+    cin >> opcion;
+    cin.ignore(); // Limpiar el buffer de entrada
+    return opcion;
+}
+
+int main() {
+    // Para mostrar acentos correctamente en la consola de Windows
+    SetConsoleOutputCP(CP_UTF8);
+
+    Cola impresora;
+    inicializarCola(impresora);
+    int opcion;
+
+    do {
+        system("cls");
+        opcion = mostrarMenu();
+
+        switch (opcion) {
+            case 1: { // Agregar Documento
+                system("cls");
+                cout << "--- Agregar Nuevo Documento ---" << endl;
+                Documento nuevoDoc;
+                
+                cout << "Nombre del archivo: ";
+                getline(cin, nuevoDoc.nombre);
+
+                char esPrio;
+                cout << "Es prioritario? (s/n): ";
+                cin >> esPrio;
+                nuevoDoc.prioritario = (esPrio == 's' || esPrio == 'S');
+
+                encolar(impresora, nuevoDoc);
+                pausarYLimpiar();
+                break;
+            }
+            case 2: { // Imprimir (Desencolar)
+                system("cls");
+                desencolar(impresora);
+                pausarYLimpiar();
+                break;
+            }
+            case 3: { // Mostrar Cola
+                system("cls");
+                mostrarCola(impresora);
+                pausarYLimpiar();
+                break;
+            }
+            case 0: { // Salir
+                cout << "Saliendo del simulador..." << endl;
+                break;
+            }
+            default: {
+                cout << "[X] Opcion no valida. Intente de nuevo." << endl;
+                pausarYLimpiar();
+                break;
+            }
+        }
+    } while (opcion != 0);
+
+    return 0;
+}
