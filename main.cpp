@@ -2,22 +2,22 @@
 #include "principiosDeInversiondeDepenendencias.h"
 using namespace std;
 
-void mostrar(Node *p){
-    if(p == NULL){
-        cout << "La lista está vacía";
+void showStack(Node *p){
+    if (isVoid(p))
+    {
+        cout << "La lista esta vacia";
         return;
     }
-    Node *aux = p;
-    cout << "Elementos de la lista: ";
-    while(aux != NULL){
-        cout << aux->value << " ";
-        if (aux == aux->next) {
-            cout << "\nError: ciclo detectado en la lista.";
-            break;
-        }
-        aux = aux->next;
-    }
-    cout << endl;
+    
+    Node *current = p;
+    cout << "Tope->";
+    while(current != nullptr){
+        cout << current -> value;
+        if(current -> next != nullptr) cout << "->";
+        current = current -> next;
+    }   
+    cout << "->Fondo" << endl;
+
 }
 
 int main(){
@@ -54,4 +54,5 @@ int main(){
     }
     
     return 0;
+
 }
